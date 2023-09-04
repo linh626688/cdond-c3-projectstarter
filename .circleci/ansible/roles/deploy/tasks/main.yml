@@ -1,0 +1,18 @@
+---
+
+- name: Creates directory
+  file:
+    path: /home/ubuntu/backend
+    state: directory
+
+- name: Extract artifact files
+  unarchive:
+    src: artifact.tar.gz
+    dest: /home/ubuntu/backend
+    
+- name: Install dependencies & Run backend
+  shell: |
+    cd /home/ubuntu/backend
+    npm install
+    pm2 stop default
+    pm2 start npm -- start

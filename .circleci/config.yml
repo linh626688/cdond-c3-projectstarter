@@ -189,7 +189,7 @@ jobs:
       # attach workspace
       - checkout
       - add_ssh_keys:
-          fingerprints: ["	a2:17:7e:88:0d:09:55:7c:d0:5d:2c:c3:78:ba:01:90"]
+          fingerprints: ["a2:17:7e:88:0d:09:55:7c:d0:5d:2c:c3:78:ba:01:90"]
       # Attach the "workspace" to the job so that you have access to all the files you need (e.g. inventory file).
       - attach_workspace:
           at: ~/
@@ -230,6 +230,81 @@ jobs:
             fi
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"   
+    
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      # Checkout code from git
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install tar
+            yum -y install gzip
+            curl -sL https://rpm.nodesource.com/setup_13.x | bash -
+            yum -y install nodejs
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd frontend
+            npm install
+            npm run build
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
+      - destroy-environments:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
+
+
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout # Checkout source code from git
+      - add_ssh_keys:
+          fingerprints: ["a2:17:7e:88:0d:09:55:7c:d0:5d:2c:c3:78:ba:01:90"]
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            apk update
+            apk add --update ansible
+            apk add --no-cache tar gzip
+            apk --no-cache add curl
+            apk add --update nodejs npm
+            pip install awscli
+      - run:
+          name: Deploy backend
+          command: |
+            cd backend
+            npm install
+            npm run build
+            cd ..
+            # Zip the directory
+            tar -C backend -czvf artifact.tar.gz .
+            cp artifact.tar.gz .circleci/ansible
+            # Run Ansible Playbook
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt deploy-backend.yml
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
+      - destroy-environments:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
+
 workflows:
   default:
     jobs:
