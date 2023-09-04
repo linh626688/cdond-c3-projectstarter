@@ -55,6 +55,8 @@ jobs:
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
 
   build-backend:
     docker:
@@ -72,7 +74,8 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
-            
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"     
   test-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -86,7 +89,9 @@ jobs:
             cd frontend
             npm install
             npm run test
-
+    - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
+          
   test-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -100,7 +105,8 @@ jobs:
             cd backend
             npm install
             npm run test
-
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -115,7 +121,8 @@ jobs:
             npm install
             npm audit fix --audit-level=critical
             # npm audit --audit-level=critical
-
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
   scan-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -130,6 +137,8 @@ jobs:
             npm install
             npm audit fix --audit-level=critical
             # npm audit --audit-level=critical
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
             
   deploy-infrastructure:
     docker:
@@ -202,6 +211,8 @@ jobs:
           command: |
             cd .circleci/ansible
             ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
 
   run-migrations:
     docker:
@@ -266,8 +277,7 @@ jobs:
       #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
-
-
+  
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
@@ -303,6 +313,42 @@ jobs:
       #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
+  
+  smoke-test:
+    docker:
+      - image: python:3.7-alpine3.11
+
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apk --no-cache add curl
+            apk add --update nodejs npm
+            pip install awscli
+      - run:
+          name: Backend smoke test.
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text)
+            if curl "http://${BACKEND_IP}:3030/api/status" | grep "ok"
+            then
+              return 0
+            else
+              return 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
+            if curl -s ${URL} | grep "Welcome"
+            then
+              return 0
+            else
+              return 1
+            fi
 
 workflows:
   default:
@@ -317,3 +363,4 @@ workflows:
       - run-migrations
       - deploy-backend
       - deploy-frontend
+      - smoke-test
