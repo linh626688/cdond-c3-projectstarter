@@ -326,7 +326,7 @@ jobs:
             apk add --update nodejs npm
             pip install awscli
       - run:
-          name: Get backend url
+          name: Backend smoke test.
           command: |
             export BACKEND_IP=$(aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
@@ -334,24 +334,17 @@ jobs:
             --output text)
             echo "${BACKEND_IP}"
             echo "http://${BACKEND_IP}:3030/api/status"
-            
-
-      - run:
-          name: Frontend smoke test.
-          command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
-            if curl -s ${URL} | grep "Welcome"
+            if curl "${API_URL}/api/status" | grep "ok"
             then
               return 0
             else
               return 1
             fi
       - run:
-          name: Backend smoke test.
+          name: Frontend smoke test.
           command: |
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            if curl "${API_URL}/api/status" | grep "ok"
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"            
+            if curl -s ${URL} | grep "Welcome"
             then
               return 0
             else
