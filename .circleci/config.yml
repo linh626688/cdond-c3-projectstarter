@@ -28,15 +28,14 @@ commands:
           name: Revert migrations
           # Add when this will run
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
-            if(( $SUCCESS==1 )); 
+            SUCCESS=$(curl --insecure  https://kvdb.io/SegUef168RnirxmJ7r6y22/migration_<< parameters.workflow_id >>)
+            # Logic for reverting the database state
+            if (( $SUCCESS == 1 ));
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
-            fi
+              cd ~/project/backend
+              npm install
+              npm run migration:revert
+            fi  
             
 jobs:
   build-frontend:
@@ -181,13 +180,6 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      - run:
-          name: Add back-end ip to ansible inventory
-          command: |
-            aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text >> .circleci/ansible/inventory.txt
 
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
@@ -350,6 +342,10 @@ jobs:
             else
               return 1
             fi
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
 workflows:
   default:
     jobs:
