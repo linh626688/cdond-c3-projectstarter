@@ -235,7 +235,6 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
-      # Checkout code from git
       - checkout
       - run:
           name: Install dependencies
@@ -316,3 +315,5 @@ workflows:
       - scan-backend
       - deploy-infrastructure
       - run-migrations
+      - deploy-backend
+      - deploy-frontend
