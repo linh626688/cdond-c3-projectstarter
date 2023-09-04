@@ -333,15 +333,8 @@ jobs:
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --output text)
             echo "${IP_BACKEND}"
-      - run:
-          name: Backend smoke test.
-          command: |
-            if curl "http://${IP_BACKEND}:3030/api/status" | grep "ok"
-            then
-              return 0
-            else
-              return 1
-            fi
+            echo "http://${IP_BACKEND}:3030/api/status"
+
       - run:
           name: Frontend smoke test.
           command: |
@@ -349,6 +342,15 @@ jobs:
             if curl -s ${URL} | grep "Welcome"
             then
               return 1
+            else
+              return 1
+            fi
+      - run:
+          name: Backend smoke test.
+          command: |
+            if curl "http://${IP_BACKEND}:3030/api/status" | grep "ok"
+            then
+              return 0
             else
               return 1
             fi
