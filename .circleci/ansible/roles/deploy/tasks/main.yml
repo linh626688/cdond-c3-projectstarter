@@ -15,4 +15,4 @@
     cd /home/ubuntu/backend
     npm install
     pm2 stop default
-    pm2 start npm -- start
+    pm2 start npm -- run "start:dev"
