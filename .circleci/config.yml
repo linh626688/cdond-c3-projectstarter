@@ -411,6 +411,7 @@ jobs:
                 echo "----------------------Delete Confirmed-------------------------------------"
                 unset OldWorkflowID
                 OldWorkflowID=$(echo $stackitem | sed -r 's/udapeople-.*-//g')
+                echo OldWorkflowID "${OldWorkflowID}"
                 aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
                 aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
                 aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
