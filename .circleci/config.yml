@@ -355,8 +355,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            yum -y install tar
-            yum -y install gzip
+            sudo apt install -y tar gzip curl
       - run:
           name: Update cloudfront distribution
           command: |
@@ -395,5 +394,4 @@ workflows:
           requires: [run-migrations]
       - smoke-test:
           requires: [deploy-backend, deploy-frontend]
-      - cloudfront-update:
-          requires: [deploy-backend, deploy-frontend]
+      - cloudfront-update
