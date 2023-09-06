@@ -403,6 +403,8 @@ jobs:
 
             for stackitem in ${STACKS[@]}
             do
+              echo stackitem "${stackitem}"
+              echo CIRCLE_WORKFLOW_ID .*"${CIRCLE_WORKFLOW_ID:0:7}".*
               if [[ !stackitem =~ .*"${CIRCLE_WORKFLOW_ID:0:7}".* ]]
               then
                 echo "----------------------Delete Confirmed-------------------------------------"
