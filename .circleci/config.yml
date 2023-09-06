@@ -401,22 +401,22 @@ jobs:
             #   echo "----------------------Cannot Cleanup---------------------------------------"
             # fi
 
+            STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                    --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
+            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"        
+            # Remove old stacks and files
             for stackitem in ${STACKS[@]}
             do
-              echo stackitem "${stackitem}"
-              echo CIRCLE_WORKFLOW_ID .*"${CIRCLE_WORKFLOW_ID:0:7}".*
-              if "${CIRCLE_WORKFLOW_ID:0:7}" not in stackItem
-              # if [[ !stackitem =~ .*"${CIRCLE_WORKFLOW_ID:0:7}".* ]]
+              if [[ ! $stackitem =~ .*"${CIRCLE_WORKFLOW_ID:0:7}".* ]]
               then
-                echo "----------------------Delete Confirmed-------------------------------------"
+                echo "--------------- CLEAN OLD INFRASTRUCTURE ---------------"
                 unset OldWorkflowID
                 OldWorkflowID=$(echo $stackitem | sed -r 's/udapeople-.*-//g')
-                echo OldWorkflowID "${OldWorkflowID}"
                 aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
                 aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
                 aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
               else
-                echo "----------------------Cannot Cleanup---------------------------------------"
+                echo "--------------- CANNOT DELETE CURRENT STACK ${stackitem} ---------------"
               fi
             done
 workflows:
