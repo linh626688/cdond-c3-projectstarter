@@ -449,10 +449,10 @@ workflows:
           filters:
             branches:
               only: [master]
-      - configure-prometheus:
-          requires: [deploy-infrastructure]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
+      - configure-prometheus:
+          requires: [configure-infrastructure]
       - run-migrations:
           requires: [configure-infrastructure]
       - deploy-frontend:
