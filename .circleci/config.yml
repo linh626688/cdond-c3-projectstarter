@@ -374,6 +374,35 @@ jobs:
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
+  configure-prometheus:
+    docker:
+      - image: python:3.7-alpine3.16
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["a2:17:7e:88:0d:09:55:7c:d0:5d:2c:c3:78:ba:01:90"]
+
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update aws-cli
+            apk add --update tar
+            apk add --update gzip
+            apk add --update ansible
+            apk add --update nodejs
+            apk add --update npm
+            apk add --update curl
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Setup Prometheus Node Exporter
+          command: |
+            cd .circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt node-exporter.yml
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+
   cleanup:
     docker:
       - image: amazon/aws-cli
@@ -407,16 +436,21 @@ workflows:
     jobs:
       - build-frontend
       - build-backend
-      - test-frontend
-          # requires: [build-frontend]
-      - test-backend
-          # requires: [build-backend]
-      - scan-backend
-          # requires: [build-backend]
-      - scan-frontend
-          # requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [master]
+      - configure-prometheus:
+          requires: [deploy-infrastructure]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
       - run-migrations:
