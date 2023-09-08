@@ -437,15 +437,18 @@ workflows:
       - build-frontend
       - build-backend
       - test-frontend
-          # requires: [build-frontend]
+          requires: [build-frontend]
       - test-backend
-          # requires: [build-backend]
+          requires: [build-backend]
       - scan-backend
-          # requires: [build-backend]
+          requires: [build-backend]
       - scan-frontend
-          # requires: [build-frontend]
+          requires: [build-frontend]
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [master]
       - configure-prometheus:
           requires: [deploy-infrastructure]
       - configure-infrastructure:
@@ -460,5 +463,5 @@ workflows:
           requires: [deploy-backend, deploy-frontend]
       - cloudfront-update:
           requires: [smoke-test]
-      # - cleanup
-      #     requires: [cloudfront-update]
+      - cleanup
+          requires: [cloudfront-update]
