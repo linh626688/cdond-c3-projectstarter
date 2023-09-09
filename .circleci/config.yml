@@ -22,6 +22,8 @@ commands:
       workflow_id:
         type: string   
     steps:
+      - attach_workspace:
+          at: ~/
       - run:
           name: Revert migrations
           when: on_fail
@@ -29,9 +31,11 @@ commands:
           command: |
             echo "Revert migrations: <<parameters.workflow_id>> "
             SUCCESS=$(curl --insecure  https://kvdb.io/SegUef168RnirxmJ7r6y22/migration_<< parameters.workflow_id >>)
+            echo $SUCCESS
             # Logic for reverting the database state
-            if (( $SUCCESS == 1 ));
+            if [[ "$SUCCESS" == "1" ]]
             then
+              echo "Starting revert"
               cd ~/project/backend
               npm install
               npm run migration:revert
