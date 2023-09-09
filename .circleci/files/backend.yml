@@ -51,5 +51,5 @@ Resources:
         InstanceId: !Ref EC2Instance
         Tags:
         - Key: Name
-          Value: !Sub Elastic IP for our Server backend-${WorkflowID}
+          Value: !Sub Elastic IP for our Server backend-${ID}
           
